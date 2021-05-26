@@ -30,7 +30,10 @@ module.exports = {
   Mutation: {
     async createContract(_, { body }, context) {
       const user = CheckAuth(context);
-      console.log(context);
+
+      if (args.body.trim() === "") {
+        throw new Error("Contract cannot be empty");
+      }
 
       const newContract = new Contract({
         body,
@@ -40,6 +43,10 @@ module.exports = {
       });
 
       const contract = await newContract.save();
+
+      context.pubsub.publish("NEW_CONTRACT", {
+        newContract: contract,
+      });
 
       return contract;
     },
@@ -79,6 +86,11 @@ module.exports = {
         await contract.save();
         return contract;
       } else throw new UserInputError("Contract not found");
+    },
+  },
+  Subscription: {
+    newContract: {
+      subscribe: (_, __, { pubsub }) => pubsub.asyncIterator("NEW_CONTRACT"),
     },
   },
 };
